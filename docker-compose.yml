@@ -1,0 +1,24 @@
+version: '2'
+services:
+  api:
+    build: .
+    command: gunicorn --config=songs/service.py songs.app:app
+    env_file: .env
+    ports:
+      - '5001:5001'
+    volumes:
+      - .:/usr/src/app
+    links:
+      - mongo
+  mongo:
+    image: mongo:3.4
+    ports:
+        - '27017:27017'
+
+  seed:
+      image: mongo:3.4
+      links:
+        - mongo
+      volumes:
+        - ./seed:/seed
+      command:  mongoimport  --host mongo --db songs --collection songs --file seed/songs.json
