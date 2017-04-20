@@ -102,6 +102,62 @@ class SongsTestCase(unittest.TestCase):
         songs = json.loads(response.data)
         self.assertFalse(songs)
 
+    def test_rating(self):
+        response = self.app.get('/songs')
+        songs = json.loads(response.data)
+        song_id = songs[0]['_id']
+        rating = 4
+        response = self.app.post('/songs/rating/{}'.format(song_id),
+                                 data=json.dumps({'rating': rating}),
+                                 content_type='application/json')
+        song = json.loads(response.data)
+        self.assertTrue('rating' in song)
+        self.assertEqual(song['rating'], rating)
+
+    def test_rating_required_fail(self):
+        response = self.app.get('/songs')
+        songs = json.loads(response.data)
+        song_id = songs[0]['_id']
+        response = self.app.post('/songs/rating/{}'.format(song_id),
+                                 data=json.dumps(dict()),
+                                 content_type='application/json')
+
+        error = json.loads(response.data)
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(error['error'], 'rating is a required body argument')
+
+    def test_rating_ivalid_id_fail(self):
+        song_id = 'invalid_id'
+        response = self.app.post('/songs/rating/{}'.format(song_id),
+                                 data=json.dumps({'rating': 4}),
+                                 content_type='application/json')
+
+        error = json.loads(response.data)
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(error['error'], 'Provided song _id is not valid')
+
+    def test_rating_range_fail(self):
+        response = self.app.get('/songs')
+        songs = json.loads(response.data)
+        song_id = songs[0]['_id']
+        response = self.app.post('/songs/rating/{}'.format(song_id),
+                                 data=json.dumps({'rating': 10}),
+                                 content_type='application/json')
+
+        error = json.loads(response.data)
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(error['error'], 'Ratings should be between 1 and 5')
+
+    def test_rating_ivalid_id_fail(self):
+        song_id = '58fcdb0d4aff3b023272faaa'
+        response = self.app.post('/songs/rating/{}'.format(song_id),
+                                 data=json.dumps({'rating': 4}),
+                                 content_type='application/json')
+
+        error = json.loads(response.data)
+        self.assertEqual(response.status_code, 404)
+        self.assertEqual(error['error'], 'Song with provided _id does not exist')
+
 
 if __name__ == '__main__':
     unittest.main()
